@@ -1,5 +1,4 @@
 import argparse
-import os
 import pathlib
 import subprocess
 
@@ -11,17 +10,14 @@ def main():
 
     base_dir = pathlib.Path(args.source)
 
-    result = subprocess.run(
-        ["git", "-C", base_dir, "status"],
-        capture_output=True, text=True
-    )
+    result = get_changed_files(base_dir)
 
-    print(result.stdout)
+    print(result)
     print(80 * "-")
 
     to_c = set()
 
-    for line in result.stdout.split("\n"):
+    for line in result.split("\n"):
         if line.startswith("	"):
             line = line.strip()
 
@@ -52,6 +48,14 @@ def main():
 
     with open('git.sh', 'w+') as f:
         [f.write(f"{i}\n") for i in sh_script_content]
+
+
+def get_changed_files(base_dir):
+    result = subprocess.run(
+        ["git", "-C", base_dir, "status"],
+        capture_output=True, text=True
+    )
+    return result.stdout
 
 
 if __name__ == '__main__':
