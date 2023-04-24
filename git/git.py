@@ -6,6 +6,8 @@ import subprocess
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--source", "-s")
+    parser.add_argument("--description", "-d")
+
     args = parser.parse_args()
 
     base_dir = pathlib.Path(args.source)
@@ -38,7 +40,10 @@ def main():
     print("enter messages")
 
     for file in set(to_c):
-        desc = input(f"{file}\n")
+        if not args.description:
+            desc = input(f"{file}\n")
+        else:
+            desc = args.description
 
         message = "git commit -m " + f'\"{" ".join(file.split("/"))} - {desc}\"'
 
