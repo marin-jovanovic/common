@@ -21,6 +21,7 @@ def unsafe_write_to_file(path: pathlib.Path, content: str):
         f.write(content)
 
 
+
 def create_dirs(dirs: list):
     """
     create directory if not exists
@@ -101,6 +102,8 @@ def get_all_files_from_directory(
 
     return files
 
+def get_all_files_from_directory_simple(folder_path:pathlib.Path) -> set:
+    return get_all_files_from_directory(folder_path, ["*"], [])
 
 def unsafe_create_file(full_path: pathlib.Path):
     """

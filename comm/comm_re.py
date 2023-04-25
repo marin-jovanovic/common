@@ -10,7 +10,4 @@ def extract_with_regex(regex_list, input):
         if tmp:
             return tmp.groups()
 
-    # print(f'>>>{input}<<<')
-    # print('no match')
     return None
-    # sys.exit(-1)

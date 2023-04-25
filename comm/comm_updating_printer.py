@@ -14,14 +14,13 @@ class Updater:
 
         return int(current_progress / self.total * 100)
 
-    def get_time(self):
+    @staticmethod
+    def get_time():
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
         return current_time
 
     def __init__(self, total, percentage_increment, current_progress):
-        print(f"start at {self.get_time()}")
-
         self.total = total
         self.percentage_increment = percentage_increment
 
@@ -33,6 +32,15 @@ class Updater:
 
         self.max_printed = False
 
+        true_ratio = f"({self.current_progress} / {self.total})"
+        current_time = Updater.get_time()
+        string_builder = "[" + self.current_total_ladders * "#" + (
+                self.max_ladders - self.current_total_ladders) * " " + \
+                         f"] {self.current_percentage}% {true_ratio} " \
+                         f"{current_time=} (start)"
+
+        print(string_builder)
+
     def update(self, new_increment=1):
         previous_total_ladders = self.current_total_ladders
 
@@ -42,11 +50,13 @@ class Updater:
 
         true_ratio = f"({self.current_progress} / {self.total})"
 
+        current_time = self.get_time()
+
         if self.current_progress == self.total and not self.max_printed:
             string_builder = "[" + self.max_ladders * "#" + "]" + (
                     self.current_total_ladders - self.max_ladders) * "#" + \
                              f" {self.current_percentage}%"
-            print(string_builder + f" {true_ratio} done!")
+            print(string_builder + f" {true_ratio} done! {current_time=}")
             self.max_printed = True
 
         elif self.current_total_ladders > self.max_ladders or (
@@ -55,10 +65,9 @@ class Updater:
             string_builder = "[" + self.max_ladders * "#" + "]" + (
                     self.current_total_ladders - self.max_ladders) * "#" + \
                              f" {self.current_progress / self.total * 100}%"
-            print(string_builder + f" {true_ratio} overflow!")
+            print(string_builder + f" {true_ratio} overflow! {current_time=}")
 
         elif self.current_total_ladders > previous_total_ladders:
-            current_time = self.get_time()
 
             string_builder = "[" + self.current_total_ladders * "#" + (
                     self.max_ladders - self.current_total_ladders) * " " + \
@@ -85,6 +94,8 @@ def main():
     for i in range(20):
         updater.update(5)
     print()
+
+    return
 
     total = 200
     updater = Updater(total=total, current_progress=0,
