@@ -1,4 +1,4 @@
-from datetime import datetime
+from comm.comm_time import get_time
 
 
 class Updater:
@@ -14,12 +14,6 @@ class Updater:
 
         return int(current_progress / self.total * 100)
 
-    @staticmethod
-    def get_time():
-        now = datetime.now()
-        current_time = now.strftime("%H:%M:%S")
-        return current_time
-
     def __init__(self, total, percentage_increment, current_progress):
         self.total = total
         self.percentage_increment = percentage_increment
@@ -33,7 +27,7 @@ class Updater:
         self.max_printed = False
 
         true_ratio = f"({self.current_progress} / {self.total})"
-        current_time = Updater.get_time()
+        current_time = get_time()
         string_builder = "[" + self.current_total_ladders * "#" + (
                 self.max_ladders - self.current_total_ladders) * " " + \
                          f"] {self.current_percentage}% {true_ratio} " \
@@ -50,7 +44,7 @@ class Updater:
 
         true_ratio = f"({self.current_progress} / {self.total})"
 
-        current_time = self.get_time()
+        current_time = get_time()
 
         if self.current_progress == self.total and not self.max_printed:
             string_builder = "[" + self.max_ladders * "#" + "]" + (
