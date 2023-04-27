@@ -21,7 +21,6 @@ def unsafe_write_to_file(path: pathlib.Path, content: str):
         f.write(content)
 
 
-
 def create_dirs(dirs: list):
     """
     create directory if not exists
@@ -164,25 +163,25 @@ def unsafe_create_file(full_path: pathlib.Path):
         return safe_create_file(full_path.name, full_path.parent)
 
 
-def safe_create_file(source_file, destination_folder):
+def safe_create_file(filename, destination_folder):
     """
     generate with new name
     Args:
-        source_file:
+        filename: file name + file suffix
         destination_folder:
 
     Returns:
 
     """
 
-    source_file = pathlib.Path(source_file)
+    filename = pathlib.Path(filename)
     destination_folder = pathlib.Path(destination_folder).absolute()
 
     c = 1
-    tmp_n = source_file.name
+    tmp_n = filename.name
 
-    name = source_file.stem
-    suffix = source_file.suffix
+    name = filename.stem
+    suffix = filename.suffix
 
     while os.path.exists(destination_folder / tmp_n):
         c += 1
