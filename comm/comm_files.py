@@ -6,8 +6,6 @@ import shutil
 import sys
 from pathlib import Path
 
-from decouple import config
-
 from comm.comm_root import get_root_path
 
 
@@ -38,10 +36,11 @@ def get_all_directories_from_directory(target_directory: pathlib.Path):
 
         f_path = target_directory / f
 
-        if os.path.is_dir(f_path):
+        if f_path.is_dir():
             r.append(f_path)
 
     return r
+
 
 
 def get_all_files_from_directory(
@@ -479,7 +478,18 @@ def create_temporary_directory(root_path, prefix='default'):
 
     :return:
     """
-    temporary_root_path = create_in_root(in_root_path=root_path)
+
+    #
+    # def create_in_root(in_root_path):
+    #     working_dir = get_root_path()
+    #     full_path = working_dir / in_root_path
+    #     create_directory_if_not_exists(target_dir=full_path)
+    #     return full_path
+    #
+
+    # temporary_root_path = create_in_root(in_root_path=root_path)
+    create_directory_if_not_exists(root_path)
+    temporary_root_path = root_path
 
     prefix_count = 0
 
