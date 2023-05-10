@@ -271,6 +271,7 @@ def safe_copy_file(source_file, destination_folder):
 
     shutil.copy2(source_file, destination_folder / tmp_n)
 
+    return destination_folder / tmp_n
 
 def get_file_hash(
         file, bytes_block, algorithm, choice_first_block_or_whole=True):
