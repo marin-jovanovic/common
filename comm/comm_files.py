@@ -678,6 +678,12 @@ def get_row_count():
 
 
 def get_all_subdirs(folder_path):
+    """
+    only look at level 1, do not go into sub-subdirectories
+    :param folder_path:
+    :return:
+    """
+
     files = set()
 
     for f in os.listdir(folder_path):
