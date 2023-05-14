@@ -5,9 +5,24 @@ import re
 import shutil
 import sys
 from pathlib import Path
-
 from comm.comm_root import get_root_path
+from bisect import insort
 
+def _create_nested_directory(p: pathlib.Path):
+    """
+
+    return bool: directory already exists?
+    """
+
+    # if not p.is_dir():
+    #     print(f"not directory {p=}")
+    #     raise NotImplementedError
+
+    if p.exists():
+        return True
+
+    p.mkdir(parents=True, exist_ok=False)
+    return False
 
 def get_file_content(p: pathlib.Path) -> str:
     with open(p, "r") as f:
@@ -173,6 +188,8 @@ def safe_create_file(filename, destination_folder):
 
     """
 
+    _create_nested_directory(destination_folder)
+
     filename = pathlib.Path(filename)
     destination_folder = pathlib.Path(destination_folder).absolute()
 
@@ -188,9 +205,8 @@ def safe_create_file(filename, destination_folder):
 
     destination_absolute_path = destination_folder / tmp_n
 
-    if pathlib.Path(destination_absolute_path).is_file():
-        print(
-            "integrity err pathlib.Path(destination_absolute_path).is_file():")
+    if destination_absolute_path.is_file():
+        print("integrity err destination_absolute_path.is_file()")
         sys.exit()
 
     with open(destination_absolute_path, "w"):
@@ -393,7 +409,6 @@ def safe_move_file(source_file, destination_folder, destination_name=None):
 def get_file_count(p: pathlib.Path):
     """include subdirectories"""
 
-    # if p.exists():
 
     return len(get_all_files_from_directory(p, ["*"], []))
 
@@ -585,7 +600,6 @@ def create_temporary_directory(root_path, prefix='default'):
         return max_dir
 
 
-from bisect import insort
 
 
 def get_max_dir_path(
@@ -691,3 +705,5 @@ def get_all_subdirs(folder_path):
             files.add(pathlib.Path(f_path))
 
     return files
+
+
