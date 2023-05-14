@@ -236,15 +236,13 @@ def safe_delete_directory(f):
         raise NotImplementedError
 
 
-def safe_create_directory(create_dest_dir, name, check_against):
+def safe_create_directory(create_dest_dir: pathlib.Path, name, check_against):
     """check if that folder exists in @check_against"""
 
     c = 2
 
-    if check_against not in os.listdir(pathlib.Path(check_against).parent):
-        pass
 
-    else:
+    if name in os.listdir(check_against):
 
         while (name + "_" + str(c)) in os.listdir(check_against):
             c += 1
