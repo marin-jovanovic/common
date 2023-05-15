@@ -8,7 +8,7 @@ from pathlib import Path
 from comm.comm_root import get_root_path
 from bisect import insort
 
-def _create_nested_directory(p: pathlib.Path):
+def create_nested_directory(p: pathlib.Path):
     """
 
     return bool: directory already exists?
@@ -59,7 +59,7 @@ def get_all_directories_from_directory(target_directory: pathlib.Path):
 
 
 def get_all_files_from_directory(
-        folder_path,
+        folder_path: pathlib.Path,
         file_types_included,
         file_types_excluded,
         skip_folders=False,
@@ -82,9 +82,7 @@ def get_all_files_from_directory(
 
     files = set()
 
-    files = set()
-
-    t = pathlib.Path(folder_path).iterdir()
+    t = [i for i in folder_path.iterdir()]
 
     if not any(t):
         return files
@@ -112,6 +110,9 @@ def get_all_files_from_directory(
 
                 if "*" in file_types_included or suffix in file_types_included:
                     files.add(f)
+
+    if len(files) == 0:
+        raise NotImplementedError
 
     return files
 
@@ -188,7 +189,7 @@ def safe_create_file(filename, destination_folder):
 
     """
 
-    _create_nested_directory(destination_folder)
+    create_nested_directory(destination_folder)
 
     filename = pathlib.Path(filename)
     destination_folder = pathlib.Path(destination_folder).absolute()
@@ -229,12 +230,7 @@ def check_file_exists(path: pathlib.Path):
         # not_exists = True
         c += 1
 
-    # if not_exists:
-    #     sys.exit(-1)
-    # print(path.exists())
-    #
-    # with open(path, "r") as f:
-    #     print(f.read())
+
 
     if c == 0:
         return True
@@ -324,7 +320,6 @@ def get_file_hash(
             h.update(data)
 
         else:
-            # try:
             while True:
 
                 try:
@@ -336,10 +331,7 @@ def get_file_hash(
                     break
 
                 h.update(data)
-            # except Exception as e:
-            #     print(e)
-            #     print(f"{file=}")
-            #     raise NotImplementedError
+
 
     return h.hexdigest()
 
@@ -409,11 +401,8 @@ def safe_move_file(source_file, destination_folder, destination_name=None):
 def get_file_count(p: pathlib.Path):
     """include subdirectories"""
 
-
     return len(get_all_files_from_directory(p, ["*"], []))
 
-    # else:
-    #     return 0
 
 
 def join_with_curr_working_dir(p):
@@ -421,30 +410,25 @@ def join_with_curr_working_dir(p):
     return os.path.join(working_dir, p)
 
 
-def create_directory_if_not_exists(target_dir, log_name=None):
-    if not log_name:
-        log_name = target_dir
+def create_directory_if_not_exists(target_dir: pathlib.Path):
+    """
+    create directory if not exists
 
-    if os.path.isdir(target_dir):
-        print(f"[log] directory exist {log_name}")
+    if exists pass
+    creates parent directories if not exists
 
-    else:
-        print(f"[log] creating directory {log_name}")
-        print(f"{target_dir=}")
-        target_dir = pathlib.Path(target_dir)
 
-        try:
-            Path(target_dir).mkdir(parents=True, exist_ok=True)
-        except:
-            # todo
-            pass
+    """
 
-    # print(f"creating \"{log_name}\" directory")
-    # try:
-    #     os.makedirs(path, exist_ok=False)
-    # except FileExistsError:
-    #     print(f"\"{log_name}\" directory already exists")
-    # print()
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    # if not os.path.isdir(target_dir):
+    #
+    #     try:
+    #     except:
+    #         # todo
+    #         pass
+
 
 
 def create_file_clear(full_path: Path) -> bool:
@@ -483,8 +467,31 @@ def deconstruct_name(name):
     t = name.split('_', 1)
     return t[0], int(t[1])
 
+def create_file_in_temporary_directory(
+    file_template_name: str,
+    temporary_directory_path: pathlib.Path,
+    subdirectory_prefix: str,
+    max_files_per_subdirectory=100
+):
+    temporary_directory = create_temporary_directory(
+        root_path=temporary_directory_path,
+        prefix=subdirectory_prefix,
+        max_files_per_dir=max_files_per_subdirectory
+    )
 
-def create_temporary_directory(root_path, prefix='default'):
+    f = safe_create_file(
+        filename=file_template_name,
+        destination_folder=temporary_directory,
+    )
+
+    return f
+
+
+def create_temporary_directory(
+        root_path,
+        prefix='default',
+        max_files_per_dir=100
+):
     """
     in @root_path put all @prefix dirs
     contains subdirectories with maximum capacity
@@ -493,21 +500,10 @@ def create_temporary_directory(root_path, prefix='default'):
     :return:
     """
 
-    #
-    # def create_in_root(in_root_path):
-    #     working_dir = get_root_path()
-    #     full_path = working_dir / in_root_path
-    #     create_directory_if_not_exists(target_dir=full_path)
-    #     return full_path
-    #
-
-    # temporary_root_path = create_in_root(in_root_path=root_path)
-    create_directory_if_not_exists(root_path)
+    # create_directory_if_not_exists(root_path)
     temporary_root_path = root_path
 
     prefix_count = 0
-
-    max_files_per_dir = 100
 
     # todo flag for this
     max_dirs_per_dir = 3
@@ -539,7 +535,7 @@ def create_temporary_directory(root_path, prefix='default'):
 
     """
 
-    first_dir = _create_name(temporary_root_path / prefix, prefix_count)
+    first_dir = temporary_root_path / _create_name( prefix, prefix_count)
 
     create_directory_if_not_exists(first_dir)
 
@@ -555,12 +551,8 @@ def create_temporary_directory(root_path, prefix='default'):
         flag_global_or_continous=True
     )
 
-    total_file_count = len(get_all_files_from_directory(
-        folder_path=max_dir,
-        file_types_included=['*'],
-        file_types_excluded=[],
-        skip_folders=True
-    ))
+
+    total_file_count = get_file_count(max_dir)
 
     # todo not working as expected,
     """
@@ -578,12 +570,14 @@ def create_temporary_directory(root_path, prefix='default'):
         todo check if this logic is ok
     """
 
+
     if total_file_count == max_files_per_dir:
-        print('max')
 
         prefix, prefix_count = deconstruct_name(max_dir.name)
 
+
         to_create = temporary_root_path / _create_name(prefix, prefix_count + 1)
+
 
         create_directory_if_not_exists(to_create)
 
@@ -595,7 +589,6 @@ def create_temporary_directory(root_path, prefix='default'):
         sys.exit(-1)
 
     else:
-        print('can create in this directory')
 
         return max_dir
 
@@ -603,8 +596,10 @@ def create_temporary_directory(root_path, prefix='default'):
 
 
 def get_max_dir_path(
-        directory: pathlib.Path, prefix: str,
-        flag_global_or_continous=True) -> pathlib.Path:
+        directory: pathlib.Path,
+        prefix: str,
+        flag_global_or_continous=True
+) -> pathlib.Path:
     """
     assume that prefix = /dir1/dir2/base_
 
@@ -623,8 +618,6 @@ def get_max_dir_path(
 
     we want to return base_4, not handled yet
 
-    :param prefix:
-    :return:
     """
 
     connector = '_'
