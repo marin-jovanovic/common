@@ -357,7 +357,7 @@ def safe_move_file(source_file, destination_folder, destination_name=None):
             c += 1
             tmp_n = f"{name}_{c}{suffix}"
 
-        shutil.move(source_file, destination_folder / tmp_n)
+        # shutil.move(source_file, destination_folder / tmp_n)
 
     else:
 
@@ -393,9 +393,12 @@ def safe_move_file(source_file, destination_folder, destination_name=None):
             # shutil.move(source_file, alternative_destination / tmp_n)
             return
 
-        shutil.move(source_file, destination_folder / tmp_n)
+    print("check")
+    raise NotImplementedError
 
-        return destination_folder / tmp_n
+    shutil.move(source_file, destination_folder / tmp_n)
+
+    return destination_folder / tmp_n
 
 
 def get_file_count(p: pathlib.Path):
@@ -422,12 +425,6 @@ def create_directory_if_not_exists(target_dir: pathlib.Path):
 
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    # if not os.path.isdir(target_dir):
-    #
-    #     try:
-    #     except:
-    #         # todo
-    #         pass
 
 
 
@@ -464,7 +461,7 @@ def _create_name(prefix, prefix_count):
 def deconstruct_name(name):
     """works with @_create_name"""
 
-    t = name.split('_', 1)
+    t = name.rsplit('_', 1)
     return t[0], int(t[1])
 
 def create_file_in_temporary_directory(
