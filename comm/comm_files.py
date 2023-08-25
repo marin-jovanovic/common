@@ -7,6 +7,103 @@ import sys
 from pathlib import Path
 from comm.comm_root import get_root_path
 from bisect import insort
+import os
+import pathlib
+
+def get_file_hash(
+        file, bytes_block, algorithm, choice_first_block_or_whole=True):
+    """
+                        hash_ = get_file_hash(file=file, bytes_block=65536,
+                                          algorithm="md5",
+                                          choice_first_block_or_whole=True)
+
+                                          if permission error, return -1
+    """
+
+    assert os.path.isfile(file), f"{file}"
+    assert pathlib.Path(file).is_file(), f"{file}"
+
+    if algorithm not in ["md5", "sha1"]:
+        print("no hash")
+        return
+
+    h = None
+
+    if algorithm == "md5":
+        h = hashlib.md5()
+
+    elif algorithm == "sha1":
+        h = hashlib.sha1()
+
+    with open(file, 'rb') as f:
+
+        if choice_first_block_or_whole:
+            try:
+
+                data = f.read(bytes_block)
+            except PermissionError:
+                return -1
+
+            h.update(data)
+
+        else:
+            while True:
+
+                try:
+                    data = f.read(bytes_block)
+                except PermissionError:
+                    return -1
+
+                if not data:
+                    break
+
+                h.update(data)
+
+
+    return h.hexdigest()
+
+
+def get_extension_dotted(p: pathlib.Path):
+    return p.suffix
+
+
+def get_extension_undotted(p: pathlib.Path):
+    return get_extension_dotted(p)[1:]
+
+
+def get_extension_undotted_normalized(p: pathlib.Path):
+    return get_extension_undotted(p).lower()
+
+
+def get_all_existing_extension(files: list) -> set:
+    """return undotted set of existing extension (from list of @files)"""
+
+    return {get_extension_undotted_normalized(p) for p in files}
+
+
+def get_size(p: pathlib.Path):
+    return os.path.getsize(p)
+
+
+def get_sha1_small(p: pathlib.Path):
+    """small portion of file, first 65536 bytes"""
+
+    return get_file_hash(
+        file=p,
+        bytes_block=65536,
+        algorithm="sha1",
+        choice_first_block_or_whole=True
+    )
+
+
+def get_md5_big(p: pathlib.Path):
+    return get_file_hash(
+        file=p,
+        bytes_block=65536,
+        algorithm="md5",
+        choice_first_block_or_whole=False
+    )
+
 
 def create_nested_directory(p: pathlib.Path):
     """
@@ -283,57 +380,6 @@ def safe_copy_file(source_file, destination_folder):
 
     return destination_folder / tmp_n
 
-def get_file_hash(
-        file, bytes_block, algorithm, choice_first_block_or_whole=True):
-    """
-                        hash_ = get_file_hash(file=file, bytes_block=65536,
-                                          algorithm="md5",
-                                          choice_first_block_or_whole=True)
-
-                                          if permission error, return -1
-    """
-
-    assert os.path.isfile(file), f"{file}"
-    assert pathlib.Path(file).is_file(), f"{file}"
-
-    if algorithm not in ["md5", "sha1"]:
-        print("no hash")
-        return
-
-    h = None
-
-    if algorithm == "md5":
-        h = hashlib.md5()
-
-    elif algorithm == "sha1":
-        h = hashlib.sha1()
-
-    with open(file, 'rb') as f:
-
-        if choice_first_block_or_whole:
-            try:
-
-                data = f.read(bytes_block)
-            except PermissionError:
-                return -1
-
-            h.update(data)
-
-        else:
-            while True:
-
-                try:
-                    data = f.read(bytes_block)
-                except PermissionError:
-                    return -1
-
-                if not data:
-                    break
-
-                h.update(data)
-
-
-    return h.hexdigest()
 
 
 def empty_directory(out_folder):
