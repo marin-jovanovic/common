@@ -24,8 +24,7 @@ def get_file_hash(
     assert pathlib.Path(file).is_file(), f"{file}"
 
     if algorithm not in ["md5", "sha1"]:
-        print("no hash")
-        return
+        raise NotImplementedError
 
     h = None
 
