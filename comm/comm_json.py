@@ -1,9 +1,23 @@
 import json
 import pathlib
-
 # from py.comm.comm_log import LOG
+from collections import defaultdict
+
 from comm.comm_files import check_file_exists
 from comm.comm_files import create_directory_if_not_exists
+
+
+def defaultdict_to_dict(d: defaultdict):
+    return {k: v for k, v in d.items()}
+
+
+def merge_dict_int(pre_source_cnt, pre_staging_cnt):
+    pre_cnt = defaultdict(int)
+    for k, v in pre_source_cnt.items():
+        pre_cnt[k] += v
+    for k, v in pre_staging_cnt.items():
+        pre_cnt[k] += v
+    return pre_cnt
 
 
 def update_json_file(path, new_content):

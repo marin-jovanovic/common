@@ -70,8 +70,6 @@ class Updater:
             print(string_builder)
 
 
-
-
 def main():
     """
     ..... .....   %0

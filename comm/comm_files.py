@@ -1,14 +1,16 @@
+import bisect
 import hashlib
 import os
 import pathlib
 import re
 import shutil
 import sys
-from pathlib import Path
-from comm.comm_root import get_root_path
 from bisect import insort
-import os
-import pathlib
+from collections import defaultdict
+from pathlib import Path
+
+from comm.comm_root import get_root_path
+
 
 def get_file_hash(
         file, bytes_block, algorithm, choice_first_block_or_whole=True):
@@ -58,7 +60,6 @@ def get_file_hash(
 
                 h.update(data)
 
-
     return h.hexdigest()
 
 
@@ -71,10 +72,15 @@ def get_extension_undotted(p: pathlib.Path):
 
 
 def get_extension_undotted_normalized(p: pathlib.Path):
+    """
+    p.suffix[1:].lower()
+    :param p:
+    :return:
+    """
     return get_extension_undotted(p).lower()
 
 
-def get_all_existing_extension(files: list) -> set:
+def get_all_existing_extension_undotted(files: list) -> set:
     """return undotted set of existing extension (from list of @files)"""
 
     return {get_extension_undotted_normalized(p) for p in files}
@@ -93,6 +99,14 @@ def get_sha1_small(p: pathlib.Path):
         algorithm="sha1",
         choice_first_block_or_whole=True
     )
+
+
+def get_extension_counts(source_folder):
+    pre_source_cnt = defaultdict(int)
+    for f in get_all_files_from_directory(source_folder, ["*"], []):
+        pre_source_cnt[get_extension_undotted_normalized(f)] += 1
+
+    return pre_source_cnt
 
 
 def get_md5_big(p: pathlib.Path):
@@ -119,6 +133,7 @@ def create_nested_directory(p: pathlib.Path):
 
     p.mkdir(parents=True, exist_ok=False)
     return False
+
 
 def get_file_content(p: pathlib.Path) -> str:
     with open(p, "r") as f:
@@ -153,67 +168,125 @@ def get_all_directories_from_directory(target_directory: pathlib.Path):
     return r
 
 
+def copy_directory_content(
+        destination_directory_path: pathlib.Path,
+        source_directory_path: pathlib.Path,
+        to_skip=None,
+        copy_empty_directories=False
+):
+    """
+        preserve tree structure
+        by default does not copy empty directories
+    """
+
+    if to_skip is None:
+        to_skip = []
+
+    directories_to_skip = [i for i in to_skip if i.is_dir()]
+    files_to_skip = [i for i in to_skip if i.is_file()]
+
+    all_files = get_all_files_from_directory_simple(
+        folder_path=source_directory_path
+    )
+
+    files_relative_to_source_directory_path = []
+    for i in all_files:
+
+        if i in files_to_skip:
+            continue
+
+        t = any(i.is_relative_to(j) for j in directories_to_skip)
+        if t:
+            continue
+
+        files_relative_to_source_directory_path.append(
+            i.relative_to(source_directory_path)
+        )
+
+    for i in files_relative_to_source_directory_path:
+
+        this_destination = destination_directory_path
+
+        if i.parent:
+            this_destination = destination_directory_path / i.parent
+
+            create_directory_if_not_exists(this_destination)
+
+        safe_copy_file(
+            source_file=source_directory_path / i,
+            destination_folder=this_destination
+        )
+
+
+from enum import Enum
+
+class RegexElements(Enum):
+    ALL = "*"
+
 
 def get_all_files_from_directory(
-        folder_path: pathlib.Path,
-        file_types_included,
-        file_types_excluded,
-        skip_folders=False,
-        directories_exclude=None
+    directory_path: pathlib.Path,
+    file_types_included: list,
+    file_types_excluded: list,
+    skip_directories=False,
+    excluded_directories=None
 ):
     """
         files = get_all_files_from_directory(os.path.abspath(t), ["*"], [])
     Args:
-        folder_path:
+        directory_path:
         file_types_included:
         file_types_excluded:
-        skip_folders:
+        skip_directories:
 
     temporary_directory
     Returns:
     """
 
-    if not directories_exclude:
-        directories_exclude = []
+    if not excluded_directories:
+        excluded_directories = []
 
-    files = set()
+    files = []
 
-    t = [i for i in folder_path.iterdir()]
+    dir_sub_obj = [i for i in directory_path.iterdir()]
 
-    if not any(t):
+    if not any(dir_sub_obj):
         return files
 
-    for f in t:
+    for f in dir_sub_obj:
 
-        if f.is_dir():
+        if f.is_dir() and not skip_directories:
+            if f.name in excluded_directories:
+                continue
 
-            if not skip_folders:
-                if f.name in directories_exclude:
-                    continue
+            for i in get_all_files_from_directory(
+                f,
+                file_types_included,
+                file_types_excluded
+            ):
+                bisect.insort(files, i)
 
-                [files.add(i) for i in
-                 get_all_files_from_directory(
-                     f,
-                     file_types_included,
-                     file_types_excluded
-                 )]
-
-        else:
+        elif not f.is_dir():
             suffix = pathlib.Path(f).suffix
 
-            if "*" not in file_types_excluded and \
+            if RegexElements.ALL not in file_types_excluded and \
                     suffix not in file_types_excluded:
 
-                if "*" in file_types_included or suffix in file_types_included:
-                    files.add(f)
+                if RegexElements.ALL in file_types_included or suffix in file_types_included:
+                    bisect.insort(files, f)
 
-    if len(files) == 0:
-        raise NotImplementedError
+    # if len(files) == 0:
+    #     # possible if dir is empty
+    #     raise NotImplementedError
 
     return files
 
-def get_all_files_from_directory_simple(folder_path:pathlib.Path) -> set:
+
+
+
+def get_all_files_from_directory_simple(folder_path: pathlib.Path) -> set:
     return get_all_files_from_directory(folder_path, ["*"], [])
+
 
 def unsafe_create_file(full_path: pathlib.Path):
     """
@@ -313,28 +386,33 @@ def safe_create_file(filename, destination_folder):
 
 
 def check_file_exists(path: pathlib.Path):
-    c = 0
-    # not_exists = False
+    assert os.path.isfile(path) == path.is_file()
 
-    if not os.path.isfile(path):
-        print(f'[err] 1 not exist: {path}')
-        # not_exists = True
-        c += 1
+    # Check if the path exists and it's either a file or a directory
+    if path.exists() and (path.is_file() or path.is_dir()):
+        print(1, True)
+        return True
+    else:
+        # If the path doesn't exist, check if a file without extension exists
+        file_without_extension = path.with_suffix('')
+        if file_without_extension.exists() and file_without_extension.is_file():
+            return True
+        else:
+            return False
 
-    if not path.is_file():
-        print(f'[err] 2 not exist: {path}')
-        # not_exists = True
-        c += 1
-
-
-
-    if c == 0:
+    if os.path.isfile(path) and path.is_file() and os.path.exists(path):
         return True
 
-    if c == 1:
-        sys.exit(-1)
+    elif not os.path.isfile(path) and not path.is_file() and not os.path.exists(
+            path):
+        return False
 
-    return False
+    else:
+        print(f"{os.path.isfile(path)=}")
+        print(f"{path.is_file()=}")
+        print(f"{os.path.exists(path)=}")
+
+        raise NotImplementedError
 
 
 def safe_delete_directory(f):
@@ -345,10 +423,11 @@ def safe_delete_directory(f):
 
 
 def safe_create_directory(create_dest_dir: pathlib.Path, name, check_against):
-    """check if that folder exists in @check_against"""
+    """
+    check if that folder exists in @check_against
+    """
 
     c = 2
-
 
     if name in os.listdir(check_against):
 
@@ -375,10 +454,9 @@ def safe_copy_file(source_file, destination_folder):
         c += 1
         tmp_n = f"{name}_{c}{suffix}"
 
-    shutil.copy2(source_file, destination_folder / tmp_n)
+    shutil.copy2(source_file, destination_folder / tmp_n, follow_symlinks=False)
 
     return destination_folder / tmp_n
-
 
 
 def empty_directory(out_folder):
@@ -386,71 +464,56 @@ def empty_directory(out_folder):
     os.makedirs(out_folder, exist_ok=True)
 
 
-def safe_move_file(source_file, destination_folder, destination_name=None):
+def get_dotted_suffix(p: pathlib.Path):
+    return p.suffix
+
+
+def safe_move_file(
+        source_file: pathlib.Path,
+        destination_folder: pathlib.Path,
+        destination_name=None
+):
+    if not isinstance(source_file, pathlib.Path):
+        print(source_file)
+        raise NotImplementedError
+
+    if not isinstance(destination_folder, pathlib.Path):
+        print(destination_folder)
+        raise NotImplementedError
+
+    if not check_file_exists(source_file):
+        print(source_file)
+        raise NotImplementedError
+
+    if not destination_folder.exists():
+        print("destination not exists")
+
+        create_nested_directory(destination_folder)
+
+    c = 1
+
+    dotted_suffix = get_dotted_suffix(source_file)
+
     if not destination_name:
+        destination_name = source_file.stem
 
-        source_file = pathlib.Path(source_file)
-        destination_folder = pathlib.Path(destination_folder)
+    tmp_n = f"{destination_name}{dotted_suffix}"
 
-        c = 1
-        tmp_n = source_file.name
+    while check_file_exists(destination_folder / tmp_n):
+        c += 1
+        tmp_n = f"{destination_name}_{c}{dotted_suffix}"
 
-        name = source_file.stem
-        suffix = source_file.suffix
+    p = destination_folder / tmp_n
 
-        while os.path.exists(destination_folder / tmp_n):
-            c += 1
-            tmp_n = f"{name}_{c}{suffix}"
+    shutil.move(source_file, p)
 
-        # shutil.move(source_file, destination_folder / tmp_n)
-
-    else:
-
-        source_file = pathlib.Path(source_file)
-        destination_folder = pathlib.Path(destination_folder)
-
-        c = 1
-        suffix = source_file.suffix
-        tmp_n = f"{destination_name}{suffix}"
-
-        while os.path.exists(destination_folder / tmp_n):
-            c += 1
-            tmp_n = f"{destination_name}_{c}{suffix}"
-
-        if not source_file.exists():
-            print("source not exists")
-            raise NotImplementedError
-
-        if not destination_folder.exists():
-            print("destination not exists")
-
-            # alternative_destination = destination_folder.parent
-
-            t = safe_move_file(
-                source_file=source_file,
-                destination_folder=destination_folder.parent,
-                destination_name=destination_name
-
-            )
-
-            print(f"moved to {t=}")
-
-            # shutil.move(source_file, alternative_destination / tmp_n)
-            return
-
-    print("check")
-    raise NotImplementedError
-
-    shutil.move(source_file, destination_folder / tmp_n)
-
-    return destination_folder / tmp_n
+    return p
 
 
 def get_file_count(p: pathlib.Path):
     """include subdirectories"""
 
     return len(get_all_files_from_directory(p, ["*"], []))
-
 
 
 def join_with_curr_working_dir(p):
@@ -469,8 +532,6 @@ def create_directory_if_not_exists(target_dir: pathlib.Path):
     """
 
     target_dir.mkdir(parents=True, exist_ok=True)
-
-
 
 
 def create_file_clear(full_path: Path) -> bool:
@@ -496,7 +557,8 @@ def create_file_clear(full_path: Path) -> bool:
 
 
 def create_source_directory():
-    return create_source_directory(in_root_path=config('SOURCE_PATH'))
+    raise NotImplementedError
+    # return create_source_directory(in_root_path=config('SOURCE_PATH'))
 
 
 def _create_name(prefix, prefix_count):
@@ -509,11 +571,12 @@ def deconstruct_name(name):
     t = name.rsplit('_', 1)
     return t[0], int(t[1])
 
+
 def create_file_in_temporary_directory(
-    file_template_name: str,
-    temporary_directory_path: pathlib.Path,
-    subdirectory_prefix: str,
-    max_files_per_subdirectory=100
+        file_template_name: str,
+        temporary_directory_path: pathlib.Path,
+        subdirectory_prefix: str,
+        max_files_per_subdirectory=100
 ):
     temporary_directory = create_temporary_directory(
         root_path=temporary_directory_path,
@@ -577,7 +640,7 @@ def create_temporary_directory(
 
     """
 
-    first_dir = temporary_root_path / _create_name( prefix, prefix_count)
+    first_dir = temporary_root_path / _create_name(prefix, prefix_count)
 
     create_directory_if_not_exists(first_dir)
 
@@ -592,7 +655,6 @@ def create_temporary_directory(
         prefix=prefix,
         flag_global_or_continous=True
     )
-
 
     total_file_count = get_file_count(max_dir)
 
@@ -612,14 +674,11 @@ def create_temporary_directory(
         todo check if this logic is ok
     """
 
-
     if total_file_count == max_files_per_dir:
 
         prefix, prefix_count = deconstruct_name(max_dir.name)
 
-
         to_create = temporary_root_path / _create_name(prefix, prefix_count + 1)
-
 
         create_directory_if_not_exists(to_create)
 
@@ -633,8 +692,6 @@ def create_temporary_directory(
     else:
 
         return max_dir
-
-
 
 
 def get_max_dir_path(
@@ -740,5 +797,3 @@ def get_all_subdirs(folder_path):
             files.add(pathlib.Path(f_path))
 
     return files
-
-

@@ -1,10 +1,11 @@
 from datetime import datetime
 
+from src_py.config.loader import get_configuration_controller, \
+    get_configuration_controller_file_path
+
 from comm.comm_files import create_dirs, safe_create_file
 from comm.comm_json import update_json_file
 from comm.comm_root import get_root_path
-from src_py.config.loader import get_configuration_controller, \
-    get_configuration_controller_file_path
 
 
 def get_log_path():
