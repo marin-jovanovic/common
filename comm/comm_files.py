@@ -103,7 +103,7 @@ def get_sha1_small(p: pathlib.Path):
 
 def get_extension_counts(source_folder):
     pre_source_cnt = defaultdict(int)
-    for f in get_all_files_from_directory(source_folder, ["*"], []):
+    for f in get_all_files_from_directory(source_folder, [RegexElements.ALL], []):
         pre_source_cnt[get_extension_undotted_normalized(f)] += 1
 
     return pre_source_cnt
@@ -232,7 +232,7 @@ def get_all_files_from_directory(
     excluded_directories=None
 ):
     """
-        files = get_all_files_from_directory(os.path.abspath(t), ["*"], [])
+        files = get_all_files_from_directory(os.path.abspath(t), [], [])
     Args:
         directory_path:
         file_types_included:
@@ -285,7 +285,7 @@ def get_all_files_from_directory(
 
 
 def get_all_files_from_directory_simple(folder_path: pathlib.Path) -> set:
-    return get_all_files_from_directory(folder_path, ["*"], [])
+    return get_all_files_from_directory(folder_path, [RegexElements.ALL], [])
 
 
 def unsafe_create_file(full_path: pathlib.Path):
@@ -422,8 +422,14 @@ def safe_delete_directory(f):
         raise NotImplementedError
 
 
-def safe_create_directory(create_dest_dir: pathlib.Path, name, check_against):
+def safe_create_directory(
+        create_dest_dir: pathlib.Path,
+        name: str,
+        check_against: pathlib.Path
+):
     """
+    @create_dest_dir directory in which should directory with name @name placed
+
     check if that folder exists in @check_against
     """
 
@@ -513,7 +519,7 @@ def safe_move_file(
 def get_file_count(p: pathlib.Path):
     """include subdirectories"""
 
-    return len(get_all_files_from_directory(p, ["*"], []))
+    return len(get_all_files_from_directory(p, [RegexElements.ALL], []))
 
 
 def join_with_curr_working_dir(p):
