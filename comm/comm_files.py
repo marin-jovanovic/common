@@ -551,13 +551,14 @@ def create_file_clear(full_path: Path) -> bool:
 
     try:
         with open(full_path, 'r') as _:
-            print(f"[log] File Exists {full_path}")
-
+            # print(f"[log] File Exists {full_path}")
+            pass
         return False
 
     except IOError:
         with     open(full_path, 'w+') as _:
-            print(f"[log] File Created {full_path}")
+            pass
+            # print(f"[log] File Created {full_path}")
 
         return True
 
@@ -691,8 +692,6 @@ def create_temporary_directory(
         return to_create
 
     elif total_file_count > max_files_per_dir:
-        print('integrity error')
-        print('todo perform restructuring (auto)')
         sys.exit(-1)
 
     else:
@@ -769,7 +768,7 @@ def get_row_count():
 
     :return: sum of number of lines for each file in provided directory
     '''
-
+    raise NotImplementedError
     directory_as_str = "products_id"
     directory = os.fsencode(directory_as_str)
     s = 0
@@ -781,10 +780,9 @@ def get_row_count():
             str_content = f.read()
 
         c = len(str_content.split("\n"))
-        print(c)
         s += c - 1
 
-    print("sum", s)
+    return s
 
 
 def get_all_subdirs(folder_path):

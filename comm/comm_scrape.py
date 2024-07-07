@@ -29,7 +29,6 @@ def scrape_page(url, headers=None):
     # except urllib.error.:
 
     if not str_content:
-        print(f"error fetching {url=}")
         sys.exit(-1)
 
     return str_content

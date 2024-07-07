@@ -33,7 +33,6 @@ def update_json_file(path, new_content):
 
 def load_json(json_file: pathlib.Path):
     if not check_file_exists(json_file):
-        print(f'[log] file not exists {json_file}')
         raise NotImplementedError
 
     with open(json_file, encoding="utf-8") as f:
