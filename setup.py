@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 setup(
-    name='comm',
+    name='commmj',
     packages=find_packages(include=['comm']),
     version='0.1.0',
     description='Common code snippets',
